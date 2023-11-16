@@ -62,10 +62,3 @@ class Empleado(ABC):
             raise DatosInvalidos("El salario no puede ser negativo.")
         self._salario = value
     
-    @abstractmethod
-    def calcular_salario(self):
-        pass
-
-    @abstractmethod
-    def mostrar_informacion(self):
-        pass
