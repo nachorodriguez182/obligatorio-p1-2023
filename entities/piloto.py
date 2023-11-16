@@ -9,6 +9,7 @@ class Piloto(Empleado):
         self._puntaje_campeonato = puntaje_campeonato
         self._estado_lesion = estado_lesion
         self._es_reserva = es_reserva
+    
 
     @property
     def score(self):

@@ -10,6 +10,7 @@ def validar_fecha(fecha_str):
         return False
 
 empleados_registrados = []
+lista_id =[]
 
 def alta_empleado():
 
@@ -17,17 +18,21 @@ def alta_empleado():
         entrada = input("Ingrese cédula (8 dígitos): ")
         try:
             id = int(entrada)
+            if id in lista_id:
+                print('La cédula ya esta registrada.')
+                return None
+            lista_id.append(id)
+
             if len(entrada) != 8:
                 print("Error: La cédula debe ser un número entero de 8 dígitos.")
             else:
                 break
         except ValueError:
             print("Error: La entrada debe ser numérica.")
-
-    if id in empleados_registrados:
-        print("Error: La cédula ya está registrada.")
+       
+        
         return None
-    empleados_registrados.append(id)
+
 
     while True:
         nombre = input("Ingrese nombre: ").strip()
@@ -101,9 +106,43 @@ def alta_empleado():
         empleado = Mecanico(id, nombre, fecha_nacimiento, nacionalidad, salario, score)
     elif cargo == '4':
         empleado = DirectorEquipo(id, nombre, fecha_nacimiento, nacionalidad, salario)
+   
+    empleados_registrados.append(empleado)
 
     return empleado
+   
+autos_registrados = []
 
+def alta_auto():
+    modelo = input("Ingrese modelo: ").strip()
+    if not modelo:
+        raise DatosInvalidos("El modelo no puede estar vacío.")
+
+    while True:
+        try:
+            año_input = input("Ingrese año: ")
+            año = int(año_input)
+            if not (1000 <= año <= datetime.now().year):
+                raise ValueError("El año debe ser un número entero positivo de 4 dígitos y no mayor al año actual.")
+            break
+        except ValueError:
+            print("Error: El año debe ser un número válido de 4 dígitos.")
+
+    while True:
+        try:
+            score_input = input("Ingrese score: ")
+            score = int(score_input)
+            if 1 <= score <= 99:
+                break
+            else:
+                raise ValueError("El score debe estar entre 1 y 99.")
+        except ValueError:
+            print("Error: El score debe ser un número válido.")
+
+    auto = Auto(modelo, año, score)
+    autos_registrados.append(auto)
+    print(f"Auto {modelo} registrado exitosamente.")
+    return auto
 
 def main():
     while True:
@@ -122,9 +161,14 @@ def main():
             empleado = alta_empleado()
             if empleado is not None:
                 print(f'Empleado {empleado.nombre} ha sido creado con éxito.')
+                print (empleados_registrados)
         elif opcion == '2':
-            # Lógica para alta de auto
-            pass
+            try:
+                alta_auto()
+                print(autos_registrados)
+            except DatosInvalidos as e:
+                print(e)
+
         elif opcion == '3':
             # Lógica para alta de equipo
             pass

@@ -6,6 +6,7 @@ class Mecanico(Empleado):
         super().__init__(id, nombre, fecha_nacimiento, nacionalidad, salario)
         self._score = score
 
+    
     @property
     def score(self):
         return self._score
