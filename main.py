@@ -30,9 +30,7 @@ def alta_empleado():
         except ValueError:
             print("Error: La entrada debe ser numérica.")
        
-        
         return None
-
 
     while True:
         nombre = input("Ingrese nombre: ").strip()
@@ -108,13 +106,21 @@ def alta_empleado():
         empleado = DirectorEquipo(id, nombre, fecha_nacimiento, nacionalidad, salario)
    
     empleados_registrados.append(empleado)
+    print(f'Empleado {empleado.nombre} ha sido creado con éxito.')
 
     return empleado
    
 autos_registrados = []
+lista_autos_creados= []
 
 def alta_auto():
     modelo = input("Ingrese modelo: ").strip()
+
+    if modelo in lista_autos_creados:
+        print("Error: Ese modelo de auto ya fue registrado.")
+        return None
+    lista_autos_creados.append(modelo)
+
     if not modelo:
         raise DatosInvalidos("El modelo no puede estar vacío.")
 
@@ -144,6 +150,85 @@ def alta_auto():
     print(f"Auto {modelo} registrado exitosamente.")
     return auto
 
+autos_asignados = []
+empleados_asignados = []
+equipos_registrados = []
+
+def alta_equipo():
+    nombre_equipo = input("Ingrese nombre del equipo: ").strip()
+    modelo_auto = input("Ingrese modelo de auto: ").strip()
+
+    auto = next((a for a in autos_registrados if a.modelo == modelo_auto), None)
+    if not auto:
+        print("Error: El modelo de auto ingresado no existe.")
+        return
+    if modelo_auto in autos_asignados:
+        print("Error: El auto ya está asignado a otro equipo.")
+        return
+    autos_asignados.append(modelo_auto)
+
+    empleados_equipo = []
+    contador_pilotos = 0
+    contador_pilotos_reserva = 0
+    contador_directores = 0
+    contador_mecanicos = 0
+
+    for i in range(11):
+        entrada_cedula = input("Ingrese cédula del empleado numero" + str(i+1) + ':')
+        try:
+            cedula_empleado = int(entrada_cedula)
+        except ValueError:
+            print("Error: La cédula debe ser un número.")
+            return
+
+        empleado_encontrado = None
+        for e in empleados_registrados:
+            if e.id == cedula_empleado:
+                empleado_encontrado = e
+            break
+
+        if not empleado_encontrado:
+            print(f"Error: No se encontró un empleado con la cédula {cedula_empleado}.")
+            return
+        else:
+            empleado = empleado_encontrado
+            if empleado.id in empleados_asignados:
+                print(f"Error: El empleado con cédula {cedula_empleado} ya está asignado a otro equipo.")
+                return
+
+        if isinstance(empleado, Piloto):
+            if empleado.es_reserva:
+                contador_pilotos_reserva += 1
+                if contador_pilotos_reserva > 1:
+                    print("Error: Ya hay un piloto reserva en el equipo.")
+                    return
+            else:
+                contador_pilotos += 1
+                if contador_pilotos > 2:
+                    print("Error: Ya hay dos pilotos en el equipo.")
+                    return
+        elif isinstance(empleado, Mecanico):
+            contador_mecanicos += 1
+            if contador_mecanicos > 8:
+                print("Error: Ya hay ocho mecánicos en el equipo.")
+                return
+        elif isinstance(empleado, DirectorEquipo):
+            contador_directores += 1
+            if contador_directores > 1:
+                print("Error: Ya hay un director de equipo en el equipo.")
+                return
+        else:
+            print("Error: Tipo de empleado no reconocido o no permitido en el equipo.")
+            return
+
+        empleados_asignados.append(empleado.id)
+        empleados_equipo.append(empleado)
+
+    nuevo_equipo = Equipo(nombre_equipo, auto, empleados_equipo)
+    equipos_registrados.append(nuevo_equipo)
+
+    print(f"Equipo {nombre_equipo} creado con éxito.")
+
 def main():
     while True:
         # Mostrar el menú de opciones
@@ -158,10 +243,8 @@ def main():
         opcion = input("Seleccione una opción: ")
 
         if opcion == '1':
-            empleado = alta_empleado()
-            if empleado is not None:
-                print(f'Empleado {empleado.nombre} ha sido creado con éxito.')
-                print (empleados_registrados)
+            alta_empleado()
+            print (empleados_registrados)
         elif opcion == '2':
             try:
                 alta_auto()
@@ -170,8 +253,9 @@ def main():
                 print(e)
 
         elif opcion == '3':
-            # Lógica para alta de equipo
-            pass
+            alta_equipo()
+            print(equipos_registrados)
+
         elif opcion == '4':
             # Lógica para simular carrera
             pass

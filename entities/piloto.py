@@ -32,7 +32,7 @@ class Piloto(Empleado):
         return self._es_reserva
 
     @score.setter
-    def id(self, value):
+    def score(self, value):
         if not isinstance(value, int) or value < 0:
             raise DatosInvalidos("El score debe ser un valor entero positivo.")
         self._score = value
