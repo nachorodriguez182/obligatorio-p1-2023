@@ -33,30 +33,20 @@ class Piloto(Empleado):
 
     @score.setter
     def score(self, value):
-        if not isinstance(value, int) or value < 0:
-            raise DatosInvalidos("El score debe ser un valor entero positivo.")
         self._score = value
 
     @numero_auto.setter
     def numero_auto(self, value):
-        if not isinstance(value, int) or value < 0:
-            raise DatosInvalidos("El numero de auto debe ser un entero positivo.")
         self._numero_auto = value
 
     @puntaje_campeonato.setter
-    def puntjaje_campeonato(self, value):
-        if not isinstance(value, int) or value < 0:
-            raise DatosInvalidos("El puntaje de campeonato debe ser un entero positivo.")
+    def puntaje_campeonato(self, value):
         self._puntaje_campeonato = value
 
     @estado_lesion.setter
     def estado_lesion(self, value):
-        if not isinstance(value, bool):
-            raise DatosInvalidos("El estado de lesión debe ser un valor booleano.")
         self._estado_lesion = value
 
     @es_reserva.setter
     def es_reserva(self, value):
-        if not isinstance(value, bool):
-            raise DatosInvalidos("El  es_reserva debe ser un valor booleano.")
         self._es_reserva = value

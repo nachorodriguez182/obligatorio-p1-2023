@@ -93,6 +93,9 @@ def alta_empleado():
                 numero_auto = int(numero_auto_input)
                 if numero_auto <= 0:
                     raise ValueError("El número de auto debe ser un número entero positivo.")
+                if any(isinstance(e, Piloto) and e.numero_auto == numero_auto for e in empleados_registrados):
+                    raise ValueError("Error: Ese número de auto ya fue asignado a otro piloto.")
+
                 break
             except ValueError as e:
                 print(f"Error: {e}")
@@ -173,7 +176,10 @@ def alta_equipo():
     contador_directores = 0
     contador_mecanicos = 0
 
-    for i in range(11):
+    autos_temporales = []
+    empleados_temporales = []
+
+    for i in range(12):
         entrada_cedula = input("Ingrese cédula del empleado numero" + str(i+1) + ':')
         try:
             cedula_empleado = int(entrada_cedula)
@@ -185,17 +191,30 @@ def alta_equipo():
         for e in empleados_registrados:
             if e.id == cedula_empleado:
                 empleado_encontrado = e
-            break
-
+                break
+        
         if not empleado_encontrado:
             print(f"Error: No se encontró un empleado con la cédula {cedula_empleado}.")
+            for auto_temp in autos_temporales:
+                autos_asignados.remove(auto_temp)
+            for emp_temp in empleados_temporales:
+                empleados_asignados.remove(emp_temp)
             return
-        else:
-            empleado = empleado_encontrado
-            if empleado.id in empleados_asignados:
-                print(f"Error: El empleado con cédula {cedula_empleado} ya está asignado a otro equipo.")
-                return
 
+        empleados_temporales.append(empleado_encontrado.id)
+        if i == 0:
+            autos_temporales.append(modelo_auto)
+
+        if empleado_encontrado.id in empleados_asignados:
+            print(f"Error: El empleado con cédula {cedula_empleado} ya está asignado a otro equipo.")
+            for auto_temp in autos_temporales:
+                autos_asignados.remove(auto_temp)
+            for emp_temp in empleados_temporales:
+                empleados_asignados.remove(emp_temp)
+            return
+        
+        empleado = empleado_encontrado
+       
         if isinstance(empleado, Piloto):
             if empleado.es_reserva:
                 contador_pilotos_reserva += 1
@@ -224,14 +243,135 @@ def alta_equipo():
         empleados_asignados.append(empleado.id)
         empleados_equipo.append(empleado)
 
-    nuevo_equipo = Equipo(nombre_equipo, auto, empleados_equipo)
+    nuevo_equipo = Equipo(nombre_equipo,modelo_auto, empleados_equipo)
     equipos_registrados.append(nuevo_equipo)
 
     print(f"Equipo {nombre_equipo} creado con éxito.")
 
+def simular_carrera():
+
+    autos_lesionados = input("Ingrese nro de auto de todos los pilotos lesionados: ").split(',')
+    autos_abandonan = input("Ingrese nro auto de todos los pilotos que abandonan separado por coma: ").split(',')
+    autos_error_pits = input("Ingrese nro de auto de todos los pilotos que cometen errores en pits: ").split(',')
+    autos_penalidad = input("Ingrese nro de auto de todos los pilotos que reciben penalidad: ").split(',')
+
+    resultados = []
+    for equipo in equipos_registrados:
+        auto_equipo = next((auto for auto in autos_registrados if auto.modelo == equipo.modelo_auto), None)
+        if auto_equipo is None:
+            print(f"Auto no encontrado para el equipo {equipo.nombre}")
+            continue
+
+        suma_score_mecanicos = sum(mecanico.score for mecanico in equipo.empleados if isinstance(mecanico, Mecanico))
+
+        pilotos_titulares = [piloto for piloto in equipo.empleados if isinstance(piloto, Piloto) and not piloto.es_reserva]
+        piloto_reserva = next((piloto for piloto in equipo.empleados if isinstance(piloto, Piloto) and piloto.es_reserva), None)
+
+        # Verificar estado de los pilotos titulares y decidir quién corre
+        pilotos_activos = []
+        for piloto in pilotos_titulares:
+            if str(piloto.numero_auto) in autos_lesionados:
+                if not pilotos_activos and piloto_reserva and not piloto_reserva.estado_lesion:
+                    # Si no hay pilotos activos aún y hay un piloto reserva disponible, se utiliza el reserva
+                    pilotos_activos.append(piloto_reserva)
+            else:
+                pilotos_activos.append(piloto)  # Añadir piloto titular no lesionado
+
+        for piloto in pilotos_activos:
+            errores_pits = autos_error_pits.count(str(piloto.numero_auto))
+            penalidades = autos_penalidad.count(str(piloto.numero_auto))
+            abandona = str(piloto.numero_auto) in autos_abandonan
+
+            if abandona or piloto.estado_lesion:
+                score_final = 0
+            else:
+                score_auto = auto_equipo.score
+                score_final = suma_score_mecanicos + score_auto + piloto.score - 5 * errores_pits - 8 * penalidades
+
+            resultados.append((piloto, score_final))
+
+    if resultados:
+        resultados.sort(key=lambda x: x[1], reverse=True)
+        puntos_asignados = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
+
+        for i, (piloto, score) in enumerate(resultados):
+            puntos = puntos_asignados[i] if i < len(puntos_asignados) and score > 0 else 0
+            print(f"{i + 1}. Piloto: {piloto.nombre}, Score final: {score}, Puntos: {puntos}")
+
+            if score > 0:
+                piloto.puntaje_campeonato += puntos
+    else:
+        print("No hay resultados para mostrar.")
+
+    for piloto in [empleado for equipo in equipos_registrados for empleado in equipo.empleados if isinstance(empleado, Piloto)]:
+        piloto.estado_lesion = False
+
+def consultar_top_10_pilotos():
+    pilotos = [empleado for empleado in empleados_registrados if isinstance(empleado, Piloto)]
+    pilotos_ordenados = sorted(pilotos, key=lambda x: x.puntaje_campeonato, reverse=True)
+    top_10_pilotos = pilotos_ordenados[:10]
+    print("Top 10 pilotos con más puntos en el campeonato:")
+    for i, piloto in enumerate(top_10_pilotos, start=1):
+        print(f"{i}. {piloto.nombre} - Puntos: {piloto.puntaje_campeonato}")
+
+def resumen_campeonato_constructores():
+    puntos_por_equipo = {}
+    for equipo in equipos_registrados:
+        puntos = sum(piloto.puntaje_campeonato for piloto in equipo.empleados if isinstance(piloto, Piloto))
+        puntos_por_equipo[equipo.nombre] = puntos
+    for equipo, puntos in puntos_por_equipo.items():
+        print(f"Equipo: {equipo}, Puntos: {puntos}")
+
+def top_5_pilotos_mejores_pagos():
+    pilotos = [empleado for equipo in equipos_registrados for empleado in equipo.empleados if isinstance(empleado, Piloto)]
+    pilotos.sort(key=lambda piloto: piloto.salario, reverse=True)
+    top_5 = pilotos[:5]
+    for piloto in top_5:
+        print(f"Piloto: {piloto.nombre}, Salario: {piloto.salario}")
+
+def top_3_pilotos_habilidosos():
+    pilotos = [empleado for equipo in equipos_registrados for empleado in equipo.empleados if isinstance(empleado, Piloto)]
+    pilotos.sort(key=lambda piloto: piloto.score, reverse=True)
+    top_3 = pilotos[:3]
+    for piloto in top_3:
+        print(f"Piloto: {piloto.nombre}, Score: {piloto.score}")
+
+def listar_jefes_de_equipo():
+    jefes = [empleado for equipo in equipos_registrados for empleado in equipo.empleados if isinstance(empleado, DirectorEquipo)]
+    for jefe in jefes:
+        print(f"Jefe de Equipo: {jefe.nombre}")
+
+def realizar_consultas():
+    while True:
+        print("""
+        1. Top 10 pilotos con más puntos en el campeonato
+        2. Resumen campeonato de constructores
+        3. Top 5 pilotos mejores pagos
+        4. Top 3 pilotos más habilidosos
+        5. Retornar jefes de equipo
+        6. Volver al menú principal
+        """)
+        opcion_consulta = input("Seleccione una opción de consulta: ")
+
+        if opcion_consulta == '1':
+            consultar_top_10_pilotos()
+        elif opcion_consulta == '2':
+            resumen_campeonato_constructores()
+        elif opcion_consulta == '3':
+            top_5_pilotos_mejores_pagos()
+        elif opcion_consulta == '4':
+            top_3_pilotos_habilidosos()
+        elif opcion_consulta == '5':
+            listar_jefes_de_equipo()
+        elif opcion_consulta == '6':
+            print("Regresando al menú principal...")
+            break
+        else:
+            print("Opción no válida. Intente de nuevo.")
+
 def main():
     while True:
-        # Mostrar el menú de opciones
+        
         print("""
         1. Alta de empleado
         2. Alta de auto
@@ -244,24 +384,19 @@ def main():
 
         if opcion == '1':
             alta_empleado()
-            print (empleados_registrados)
+
         elif opcion == '2':
-            try:
                 alta_auto()
-                print(autos_registrados)
-            except DatosInvalidos as e:
-                print(e)
 
         elif opcion == '3':
             alta_equipo()
-            print(equipos_registrados)
 
         elif opcion == '4':
-            # Lógica para simular carrera
-            pass
+            simular_carrera()
+
         elif opcion == '5':
-            # Lógica para realizar consultas
-            pass
+            realizar_consultas()
+    
         elif opcion == '6':
             print("Finalizando el programa...")
             break

@@ -33,7 +33,7 @@ class Empleado(ABC):
     @id.setter
     def id(self, value):
         if not isinstance(value, int):
-            raise DatosInvalidos("El ID debe ser una cadena de texto.")
+            raise DatosInvalidos("El ID debe ser un entero.")
         self._id = value
 
     @nombre.setter
