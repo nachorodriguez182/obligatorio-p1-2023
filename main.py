@@ -267,15 +267,13 @@ def simular_carrera():
         pilotos_titulares = [piloto for piloto in equipo.empleados if isinstance(piloto, Piloto) and not piloto.es_reserva]
         piloto_reserva = next((piloto for piloto in equipo.empleados if isinstance(piloto, Piloto) and piloto.es_reserva), None)
 
-        # Verificar estado de los pilotos titulares y decidir quién corre
         pilotos_activos = []
         for piloto in pilotos_titulares:
             if str(piloto.numero_auto) in autos_lesionados:
                 if not pilotos_activos and piloto_reserva and not piloto_reserva.estado_lesion:
-                    # Si no hay pilotos activos aún y hay un piloto reserva disponible, se utiliza el reserva
                     pilotos_activos.append(piloto_reserva)
             else:
-                pilotos_activos.append(piloto)  # Añadir piloto titular no lesionado
+                pilotos_activos.append(piloto)
 
         for piloto in pilotos_activos:
             errores_pits = autos_error_pits.count(str(piloto.numero_auto))
